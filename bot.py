@@ -9,6 +9,9 @@ from aiogram.dispatcher.middlewares import BaseMiddleware
 from aiogram.dispatcher.handler import CancelHandler
 from dotenv import load_dotenv
 
+# Version of the bot (project)
+__version__ = "0.1.0"
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -194,6 +197,11 @@ async def send_help(message: types.Message):
                  "and tracks flagged spam messages in the chat. Use /fstat to view "
                  "the spam statistics for this group.")
     await message.reply(help_text)
+
+# Command: /version - Show the bot's current version
+@dp.message_handler(commands=['version'])
+async def show_version(message: types.Message):
+    await message.answer(f"Currently running bot version: {__version__}")
 
 # Add SpamMiddleware to the dispatcher
 dp.middleware.setup(SpamMiddleware())
