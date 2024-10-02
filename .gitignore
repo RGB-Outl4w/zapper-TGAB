@@ -1,0 +1,15 @@
+# Ignore the .env file where sensitive data (tokens) are stored
+.env
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment folders
+venv/
+env/
+
+# Ignore IDE-specific files (for VSCode, PyCharm, etc.)
+.vscode/
+.idea/
