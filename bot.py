@@ -28,6 +28,14 @@ dp.middleware.setup(LoggingMiddleware())
 # Directory for spam phrases
 SPAM_PHRASES_DIR = os.path.join(os.path.dirname(__file__), "spam_phrases")
 
+# File to store flagged message counts for each group
+FLAGGED_MESSAGES_FILE = os.path.join(os.path.dirname(__file__), "flagged_messages.txt")
+
+# Ensure flagged messages file exists
+if not os.path.exists(FLAGGED_MESSAGES_FILE):
+    with open(FLAGGED_MESSAGES_FILE, 'w') as f:
+        pass
+
 # Function to load spam phrases from a file
 def load_spam_phrases(language: str) -> list:
     file_path = os.path.join(SPAM_PHRASES_DIR, f"{language}.txt")
@@ -59,8 +67,8 @@ class SpamMiddleware(BaseMiddleware):
     async def on_process_message(self, message: types.Message, data: dict):
         language = detect_language(message.text)
         if is_spam(message.text, language):
-            group_id = message.chat.id
-            group_spam_count[group_id] += 1
+            group_id = str(message.chat.id)
+            increment_flagged_message_count(group_id)
             await message.delete()
             raise CancelHandler()  # Cancel further message handling
 
@@ -126,12 +134,53 @@ def is_spam(text: str, language: str) -> bool:
         # Return False if no phrases for the detected language
         return False
 
+# Function to read the flagged messages count for a specific group
+def get_flagged_message_count(group_id: str) -> int:
+    with open(FLAGGED_MESSAGES_FILE, "r") as f:
+        for line in f:
+            saved_group_id, count = line.strip().split(":")
+            if saved_group_id == group_id:
+                return int(count)
+    return 0
+
+# Function to increment the flagged message count for a group
+def increment_flagged_message_count(group_id: str):
+    counts = {}
+    
+    # Read current counts
+    with open(FLAGGED_MESSAGES_FILE, "r") as f:
+        for line in f:
+            saved_group_id, count = line.strip().split(":")
+            counts[saved_group_id] = int(count)
+    
+    # Increment count for the specific group
+    if group_id in counts:
+        counts[group_id] += 1
+    else:
+        counts[group_id] = 1
+    
+    # Write updated counts back to file
+    with open(FLAGGED_MESSAGES_FILE, "w") as f:
+        for gid, count in counts.items():
+            f.write(f"{gid}:{count}\n")
+
 # Command: /fstat - Show the number of flagged spam messages for the current chat
 @dp.message_handler(commands=['fstat'])
 async def show_spam_stat(message: types.Message):
-    group_id = message.chat.id
-    spam_count = group_spam_count.get(group_id, 0)
-    await message.answer(f"Total flagged spam messages in this chat: {spam_count}")
+    group_id = str(message.chat.id)
+    spam_count = get_flagged_message_count(group_id)
+    
+    # Respond based on the number of flagged messages
+    if spam_count == 0:
+        await message.answer("This group is spotless! Not a single spam message flagged.")
+    elif spam_count <= 5:
+        await message.answer(f"Only {spam_count} spam messages flagged... This group is rather clean.")
+    elif spam_count <= 100:
+        await message.answer(f"{spam_count} spam messages flagged... Looks like the bot is doing its job!")
+    elif spam_count <= 500:
+        await message.answer(f"{spam_count} spam messages flagged... This group has seen some activity!")
+    else:
+        await message.answer(f"Wow! {spam_count} spam messages flagged... Lots of hard work was done here!")
 
 # Start command handler
 @dp.message_handler(commands=['start'])
