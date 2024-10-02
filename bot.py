@@ -42,6 +42,14 @@ def load_spam_phrases(language: str) -> list:
 # Load phrases for English and Russian
 ENGLISH_SPAM_PHRASES = load_spam_phrases("english")
 RUSSIAN_SPAM_PHRASES = load_spam_phrases("russian")
+GERMAN_SPAM_PHRASES = load_spam_phrases("german")
+FRENCH_SPAM_PHRASES = load_spam_phrases("french")
+ITALIAN_SPAM_PHRASES = load_spam_phrases("italian")
+VIETNAMESE_SPAM_PHRASES = load_spam_phrases("vietnamese")
+CHINESE_SPAM_PHRASES = load_spam_phrases("chinese")
+UKRAINIAN_SPAM_PHRASES = load_spam_phrases("ukrainian")
+HINDI_SPAM_PHRASES = load_spam_phrases("hindi")
+JAPANESE_SPAM_PHRASES = load_spam_phrases("japanese")
 
 # Track spam statistics by group chat
 group_spam_count = defaultdict(int)
@@ -60,21 +68,62 @@ class SpamMiddleware(BaseMiddleware):
 def detect_language(text: str) -> str:
     russian_chars = set("абвгдеёжзийклмнопрстуфхцчшщьыъэюя")
     english_chars = set("abcdefghijklmnopqrstuvwxyz")
+    spanish_chars = set("abcdefghijklmnñopqrstuvwxyz")
+    german_chars = set("abcdefghijklmnopqrstuvwxyzß")
+    french_chars = set("abcdefghijklmnopqrstuvwxyz")
+    chinese_chars = set("āáǎàēéěèīíǐìōóǒòūúǔùüǘǚǜㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦㄧㄨㄩ")
+    japanese_chars = set("あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん")
+    vietnamese_chars = set("aăâbcdđeêghiklmnonpqrstuưvxy")
+    italian_chars = set("abcdefghijklmnopqrstuvwxyz")
+    ukrainian_chars = set("абвгґдеєжзиїйклмнопрстуфхцчшщьюя")
+    hindi_chars = set("अआइईउऊऋऌएऐओऔकखगघङचछजझञटठडढणतथदधनपफबभमयरलवशषसह")
+
+    # Mapping languages to their character sets
+    language_sets = {
+        "ru": russian_chars,
+        "en": english_chars,
+        "es": spanish_chars,
+        "de": german_chars,
+        "fr": french_chars,
+        "zh": chinese_chars,
+        "ja": japanese_chars,
+        "vi": vietnamese_chars,
+        "it": italian_chars,
+        "uk": ukrainian_chars,
+        "hi": hindi_chars,
+    }
     
     text_chars = set(text.lower())
     
-    if len(text_chars & russian_chars) > len(text_chars & english_chars):
-        return "ru"
-    else:
-        return "en"
+    # Determine which language has the most character matches
+    detected_language = max(language_sets, key=lambda lang: len(text_chars & language_sets[lang]))
 
-# Function to check if message contains spam phrases
+    return detected_language
+
+# Function to check if message contains spam phrases for multiple languages
 def is_spam(text: str, language: str) -> bool:
-    if language == "ru":
-        return any(phrase in text.lower() for phrase in RUSSIAN_SPAM_PHRASES)
-    elif language == "en":
-        return any(phrase in text.lower() for phrase in ENGLISH_SPAM_PHRASES)
+    # Map each language to its respective spam phrases
+    spam_phrases = {
+        "ru": RUSSIAN_SPAM_PHRASES,
+        "en": ENGLISH_SPAM_PHRASES,
+        "es": SPANISH_SPAM_PHRASES,
+        "de": GERMAN_SPAM_PHRASES,
+        "fr": FRENCH_SPAM_PHRASES,
+        "zh": CHINESE_SPAM_PHRASES,
+        "ja": JAPANESE_SPAM_PHRASES,
+        "vi": VIETNAMESE_SPAM_PHRASES,
+        "it": ITALIAN_SPAM_PHRASES,
+        "uk": UKRAINIAN_SPAM_PHRASES,
+        "hi": HINDI_SPAM_PHRASES
+    }
+
+    # Get the spam phrases for the detected language (if available)
+    phrases = spam_phrases.get(language)
+
+    if phrases:
+        return any(phrase in text.lower() for phrase in phrases)
     else:
+        # Return False if no phrases for the detected language
         return False
 
 # Command: /fstat - Show the number of flagged spam messages for the current chat
@@ -83,18 +132,6 @@ async def show_spam_stat(message: types.Message):
     group_id = message.chat.id
     spam_count = group_spam_count.get(group_id, 0)
     await message.answer(f"Total flagged spam messages in this chat: {spam_count}")
-
-# Admin-only command: /add_phrase - Add a new spam phrase to the filter (Only for memory, not saving to file)
-@dp.message_handler(commands=['add_phrase'], user_id=ADMIN_ID)  # Using ADMIN_ID from .env
-async def add_spam_phrase(message: types.Message):
-    args = message.get_args()
-    if not args:
-        await message.reply("Please provide a phrase to add.")
-        return
-
-    ENGLISH_SPAM_PHRASES.append(args.lower())
-    RUSSIAN_SPAM_PHRASES.append(args.lower())
-    await message.reply(f"Phrase '{args}' has been added to the spam filter.")
 
 # Start command handler
 @dp.message_handler(commands=['start'])
