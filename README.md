@@ -35,7 +35,7 @@ telegram-antispam-bot/
 
 2. **Create and configure the .env file**:
 
-  - Copy the .env.example file to .env:
+  - **[OPTIONAL]** Copy the .env.example file to .env:
   ```bash
   cp .env.example .env
   ```
@@ -51,9 +51,9 @@ telegram-antispam-bot/
    pip install -r requirements.txt
    ```
    
-4. **Add spam phrases**: Add spam phrases to the `spam_phrases/english.txt` and `spam_phrases/russian.txt` files as needed. Each phrase should be on a new line.
+4. **Add spam phrases**: Add spam phrases to the `spam_phrases/english.txt` and other files as needed. Each phrase should be on a new line.
 
 5. Run the bot:
-  ```bash
-  python bot.py
-  ```
+   ```bash
+   python bot.py
+   ```
