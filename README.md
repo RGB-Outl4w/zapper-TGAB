@@ -43,7 +43,6 @@ telegram-antispam-bot/
   - Edit the .env file to include your bot token and admin ID:
   ```bash
   BOT_TOKEN=your-bot-token-here
-  ADMIN_ID=your-admin-id-here
   ```
 
 3. **Install the dependencies: Make sure you have Python installed. Then, install the required libraries**:
