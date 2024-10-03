@@ -10,7 +10,7 @@ from aiogram.dispatcher.handler import CancelHandler
 from dotenv import load_dotenv
 
 # Version of the bot (project)
-__version__ = "0.1.0"
+__version__ = "0.1.0a"
 
 # Load environment variables from .env file
 load_dotenv()
