@@ -20,7 +20,6 @@ logging.basicConfig(level=logging.INFO)
 
 # Load bot token and admin ID from environment variables
 BOT_TOKEN = os.getenv('BOT_TOKEN')
-ADMIN_ID = int(os.getenv('ADMIN_ID'))
 
 # Initialize bot and dispatcher
 bot = Bot(token=BOT_TOKEN)
