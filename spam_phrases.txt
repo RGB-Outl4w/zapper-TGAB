@@ -1,0 +1,108 @@
+--- ENGLISH ---
+en:free trial
+en:urgent action
+en:best price
+en:limited offer
+en:get rich quick
+en:click here now
+en:increase traffic
+en:casino bonus
+en:miracle cure
+en:guaranteed results
+en:unlock potential
+en:financial freedom
+en:make money online
+en:exclusive offer
+en:limited time only
+en:weight loss fast
+en:earn money fast
+en:top secret offer
+en:buy now pay later
+en:amazing opportunity
+en:special discount
+en:secret discount
+en:instant results
+en:approved instantly
+en:free gift
+en:special offer
+en:urgent notice
+en:must have
+en:free consultation
+en:call to action
+en:big savings
+en:money back
+en:click below
+en:hot deal
+en:best deals
+en:save big
+en:lowest prices
+en:special promotion
+en:free shipping
+en:limited stock
+en:click this link
+en:instant access
+en:lifetime access
+en:join now
+en:click here
+en:subscribe now
+en:get yours now
+en:act fast
+en:don't miss out
+en:find out more
+en:learn more
+en:read more
+en:find out
+
+--- RUSSIAN ---
+ru:бесплатная пробная версия
+ru:срочные действия
+ru:лучшая цена
+ru:ограниченное предложение
+ru:быстро разбогатеть
+ru:нажмите здесь сейчас
+ru:увеличить трафик
+ru:бонус казино
+ru:чудодейственное лекарство
+ru:гарантированные результаты
+ru:раскрыть потенциал
+ru:финансовая свобода
+ru:зарабатывать деньги онлайн
+ru:эксклюзивное предложение
+ru:только ограниченное время
+ru:быстрая потеря веса
+ru:быстро заработать деньги
+ru:совершенно секретное предложение
+ru:купить сейчас, заплатить позже
+ru:удивительная возможность
+ru:специальная скидка
+ru:секретная скидка
+ru:мгновенные результаты
+ru:мгновенно одобрено
+ru:бесплатный подарок
+ru:специальное предложение
+ru:срочное уведомление
+ru:обязательно иметь
+ru:бесплатная консультация
+ru:призыв к действию
+ru:большая экономия
+ru:возврат денег
+ru:нажмите ниже
+ru:горячая сделка
+ru:лучшие предложения
+ru:сэкономьте много
+ru:самые низкие цены
+ru:специальная акция
+ru:бесплатная доставка
+ru:ограниченный запас
+ru:нажмите на эту ссылку
+ru:мгновенный доступ
+ru:пожизненный доступ
+ru:присоединяйтесь сейчас
+ru:нажмите здесь
+ru:подпишитесь сейчас
+ru:получите свое сейчас
+ru:действуйте быстро
+ru:не упустите
+ru:узнать больше
+ru:узнать больше
+ru:читать далее

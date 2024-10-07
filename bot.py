@@ -1,210 +1,125 @@
 import logging
 import os
-from aiogram import Bot, Dispatcher, types
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
-from aiogram.utils import executor
-from collections import defaultdict
+import threading
+from typing import List, Dict
+
+from aiogram import Bot, Dispatcher, types, executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.middlewares import BaseMiddleware
-from aiogram.dispatcher.handler import CancelHandler
 from dotenv import load_dotenv
-
-# Version of the bot (project)
-__version__ = "0.1.0a"
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-
-# Load bot token and admin ID from environment variables
+# --- Configuration ---
 BOT_TOKEN = os.getenv('BOT_TOKEN')
+SPAM_PHRASES_FILE = "spam_phrases.txt"
+FLAGGED_MESSAGES_FILE = "flagged_messages.txt"
 
-# Initialize bot and dispatcher
+# --- Global Variables ---
+spam_phrases: Dict[str, List[str]] = {}  # Using a dictionary for language-specific phrases
+flagged_message_counts: Dict[str, int] = {}
+file_lock = threading.Lock()
+
+# --- Bot Initialization ---
 bot = Bot(token=BOT_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
-dp.middleware.setup(LoggingMiddleware())
 
-# Directory for spam phrases
-SPAM_PHRASES_DIR = os.path.join(os.path.dirname(__file__), "spam_phrases")
+# --- Logging Setup ---
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# File to store flagged message counts for each group
-FLAGGED_MESSAGES_FILE = os.path.join(os.path.dirname(__file__), "flagged_messages.txt")
+# --- Helper Functions ---
 
-# Ensure flagged messages file exists
-if not os.path.exists(FLAGGED_MESSAGES_FILE):
-    with open(FLAGGED_MESSAGES_FILE, 'w') as f:
-        pass
+def load_spam_phrases():
+    """Loads spam phrases from the specified file."""
+    global spam_phrases
+    with open(SPAM_PHRASES_FILE, "r", encoding="utf-8") as f:
+        for line in f:
+            if ":" not in line:
+                continue
+            language, phrase = line.strip().split(":", 1)
+            language = language.strip().lower()
+            phrase = phrase.strip().lower()
+            if language not in spam_phrases:
+                spam_phrases[language] = []
+            spam_phrases[language].append(phrase)
 
-# Function to load spam phrases from a file
-def load_spam_phrases(language: str) -> list:
-    file_path = os.path.join(SPAM_PHRASES_DIR, f"{language}.txt")
+def load_flagged_message_counts():
+    """Loads flagged message counts from the file."""
+    global flagged_message_counts
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            phrases = [line.strip().lower() for line in f if line.strip()]
-        return phrases
+        with open(FLAGGED_MESSAGES_FILE, "r") as f:
+            for line in f:
+                if ":" not in line:
+                    continue
+                group_id, count = line.strip().split(":")
+                flagged_message_counts[group_id] = int(count)
     except FileNotFoundError:
-        logging.error(f"Spam phrases file for '{language}' not found.")
-        return []
+        logging.warning("Flagged messages file not found. Starting fresh.")
 
-# Load phrases for English and Russian
-ENGLISH_SPAM_PHRASES = load_spam_phrases("english")
-RUSSIAN_SPAM_PHRASES = load_spam_phrases("russian")
-GERMAN_SPAM_PHRASES = load_spam_phrases("german")
-FRENCH_SPAM_PHRASES = load_spam_phrases("french")
-ITALIAN_SPAM_PHRASES = load_spam_phrases("italian")
-VIETNAMESE_SPAM_PHRASES = load_spam_phrases("vietnamese")
-CHINESE_SPAM_PHRASES = load_spam_phrases("chinese")
-UKRAINIAN_SPAM_PHRASES = load_spam_phrases("ukrainian")
-HINDI_SPAM_PHRASES = load_spam_phrases("hindi")
-JAPANESE_SPAM_PHRASES = load_spam_phrases("japanese")
+def save_flagged_message_counts():
+    """Saves flagged message counts to the file."""
+    with open(FLAGGED_MESSAGES_FILE, "w") as f:
+        for group_id, count in flagged_message_counts.items():
+            f.write(f"{group_id}:{count}\n")
 
-# Track spam statistics by group chat
-group_spam_count = defaultdict(int)
+def detect_language(text: str) -> str:
+    """Basic language detection (English or Russian)."""
+    russian_chars = set("абвгдеёжзийклмнопрстуфхцчшщьыъэюя")
+    english_chars = set("abcdefghijklmnopqrstuvwxyz")
 
-# Middleware to handle spam detection and message deletion
+    text_chars = set(text.lower())
+    if len(text_chars & russian_chars) > len(text_chars & english_chars):
+        return "ru"
+    return "en"
+
+def is_spam(text: str, language: str) -> bool:
+    """Checks if the message contains spam phrases (substring match)."""
+    text_lower = text.lower()
+    for phrase in spam_phrases.get(language, []):
+        if phrase in text_lower:
+            return True
+    return False
+
+# --- Middleware ---
 class SpamMiddleware(BaseMiddleware):
     async def on_process_message(self, message: types.Message, data: dict):
         language = detect_language(message.text)
         if is_spam(message.text, language):
+            logging.info("SpamMiddleware triggered!")
+            logging.info(f"Spam detected: {message.text}")
             group_id = str(message.chat.id)
-            increment_flagged_message_count(group_id)
-            await message.delete()
-            raise CancelHandler()  # Cancel further message handling
+            with file_lock:
+                flagged_message_counts[group_id] = flagged_message_counts.get(group_id, 0) + 1
+                save_flagged_message_counts()
+            try:
+                await message.delete()
+            except Exception as e:
+                logging.error(f"Failed to delete message: {e}")
 
-# Function to detect message language (basic)
-def detect_language(text: str) -> str:
-    russian_chars = set("абвгдеёжзийклмнопрстуфхцчшщьыъэюя")
-    english_chars = set("abcdefghijklmnopqrstuvwxyz")
-    spanish_chars = set("abcdefghijklmnñopqrstuvwxyz")
-    german_chars = set("abcdefghijklmnopqrstuvwxyzß")
-    french_chars = set("abcdefghijklmnopqrstuvwxyz")
-    chinese_chars = set("āáǎàēéěèīíǐìōóǒòūúǔùüǘǚǜㄅㄆㄇㄈㄉㄊㄋㄌㄍㄎㄏㄐㄑㄒㄓㄔㄕㄖㄗㄘㄙㄚㄛㄜㄝㄞㄟㄠㄡㄢㄣㄤㄥㄦㄧㄨㄩ")
-    japanese_chars = set("あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん")
-    vietnamese_chars = set("aăâbcdđeêghiklmnonpqrstuưvxy")
-    italian_chars = set("abcdefghijklmnopqrstuvwxyz")
-    ukrainian_chars = set("абвгґдеєжзиїйклмнопрстуфхцчшщьюя")
-    hindi_chars = set("अआइईउऊऋऌएऐओऔकखगघङचछजझञटठडढणतथदधनपफबभमयरलवशषसह")
 
-    # Mapping languages to their character sets
-    language_sets = {
-        "ru": russian_chars,
-        "en": english_chars,
-        "es": spanish_chars,
-        "de": german_chars,
-        "fr": french_chars,
-        "zh": chinese_chars,
-        "ja": japanese_chars,
-        "vi": vietnamese_chars,
-        "it": italian_chars,
-        "uk": ukrainian_chars,
-        "hi": hindi_chars,
-    }
-    
-    text_chars = set(text.lower())
-    
-    # Determine which language has the most character matches
-    detected_language = max(language_sets, key=lambda lang: len(text_chars & language_sets[lang]))
-
-    return detected_language
-
-# Function to check if message contains spam phrases for multiple languages
-def is_spam(text: str, language: str) -> bool:
-    # Map each language to its respective spam phrases
-    spam_phrases = {
-        "ru": RUSSIAN_SPAM_PHRASES,
-        "en": ENGLISH_SPAM_PHRASES,
-        "es": SPANISH_SPAM_PHRASES,
-        "de": GERMAN_SPAM_PHRASES,
-        "fr": FRENCH_SPAM_PHRASES,
-        "zh": CHINESE_SPAM_PHRASES,
-        "ja": JAPANESE_SPAM_PHRASES,
-        "vi": VIETNAMESE_SPAM_PHRASES,
-        "it": ITALIAN_SPAM_PHRASES,
-        "uk": UKRAINIAN_SPAM_PHRASES,
-        "hi": HINDI_SPAM_PHRASES
-    }
-
-    # Get the spam phrases for the detected language (if available)
-    phrases = spam_phrases.get(language)
-
-    if phrases:
-        return any(phrase in text.lower() for phrase in phrases)
-    else:
-        # Return False if no phrases for the detected language
-        return False
-
-# Function to read the flagged messages count for a specific group
-def get_flagged_message_count(group_id: str) -> int:
-    with open(FLAGGED_MESSAGES_FILE, "r") as f:
-        for line in f:
-            saved_group_id, count = line.strip().split(":")
-            if saved_group_id == group_id:
-                return int(count)
-    return 0
-
-# Function to increment the flagged message count for a group
-def increment_flagged_message_count(group_id: str):
-    counts = {}
-    
-    # Read current counts
-    with open(FLAGGED_MESSAGES_FILE, "r") as f:
-        for line in f:
-            saved_group_id, count = line.strip().split(":")
-            counts[saved_group_id] = int(count)
-    
-    # Increment count for the specific group
-    if group_id in counts:
-        counts[group_id] += 1
-    else:
-        counts[group_id] = 1
-    
-    # Write updated counts back to file
-    with open(FLAGGED_MESSAGES_FILE, "w") as f:
-        for gid, count in counts.items():
-            f.write(f"{gid}:{count}\n")
-
-# Command: /fstat - Show the number of flagged spam messages for the current chat
+# --- Handlers ---
 @dp.message_handler(commands=['fstat'])
 async def show_spam_stat(message: types.Message):
     group_id = str(message.chat.id)
-    spam_count = get_flagged_message_count(group_id)
-    
-    # Respond based on the number of flagged messages
-    if spam_count == 0:
-        await message.answer("This group is spotless! Not a single spam message flagged.")
-    elif spam_count <= 5:
-        await message.answer(f"Only {spam_count} spam messages flagged... This group is rather clean.")
-    elif spam_count <= 100:
-        await message.answer(f"{spam_count} spam messages flagged... Looks like the bot is doing its job!")
-    elif spam_count <= 500:
-        await message.answer(f"{spam_count} spam messages flagged... This group has seen some activity!")
-    else:
-        await message.answer(f"Wow! {spam_count} spam messages flagged... Lots of hard work was done here!")
+    spam_count = flagged_message_counts.get(group_id, 0)
+    await message.delete()
+    await message.answer(f"This group has {spam_count} flagged spam messages.")
 
-# Start command handler
-@dp.message_handler(commands=['start'])
+@dp.message_handler(commands=['start', 'help'])
 async def send_welcome(message: types.Message):
-    await message.reply("Welcome! This bot filters spam messages and tracks spam stats for this chat.")
+    await message.reply("This bot filters spam messages.") 
 
-# Help command handler
-@dp.message_handler(commands=['help'])
-async def send_help(message: types.Message):
-    help_text = ("This bot automatically filters spam messages based on phrases "
-                 "and tracks flagged spam messages in the chat. Use /fstat to view "
-                 "the spam statistics for this group.")
-    await message.reply(help_text)
+@dp.message_handler(content_types=types.ContentType.TEXT)
+async def handle_text_messages(message: types.Message):
+    # This handler captures all text messages.
+    # The spam middleware will automatically check for spam.
+    pass
 
-# Command: /version - Show the bot's current version
-@dp.message_handler(commands=['version'])
-async def show_version(message: types.Message):
-    await message.answer(f"Currently running bot version: {__version__}")
-
-# Add SpamMiddleware to the dispatcher
-dp.middleware.setup(SpamMiddleware())
-
-# Run the bot
+# --- Startup and Polling ---
 if __name__ == '__main__':
+    load_spam_phrases()
+    load_flagged_message_counts()
+    dp.middleware.setup(SpamMiddleware())
     executor.start_polling(dp, skip_updates=True)
