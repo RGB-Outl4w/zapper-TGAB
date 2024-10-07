@@ -5,8 +5,7 @@ A Telegram bot built using `aiogram` that automatically filters spam messages ba
 ## Features
 
 - Phrase-based spam detection for English and Russian
-- Dynamic spam tracking per group chat
-- Admin command to add new spam phrases
+- Dynamic spam tracking per group chat that has this bot
 - Supports additional languages by adding new phrases to `spam_phrases.txt` file
 - Securely stores sensitive information like bot tokens in a `.env` file
 
@@ -47,7 +46,10 @@ telegram-antispam-bot/
    pip install -r requirements.txt
    ```
    
-4. **Add spam phrases**: Add spam phrases to the `spam_phrases/english.txt` and other files as needed. Each phrase should be on a new line.
+4. **Add spam phrases**: Add spam phrases to the `spam_phrases.txt` and other files as needed. Each phrase should be on a new line and formatted in the following way:
+   ```
+   language:phrase
+   ```
 
 5. Run the bot:
    ```bash
