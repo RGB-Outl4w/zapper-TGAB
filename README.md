@@ -36,7 +36,7 @@ telegram-antispam-bot/
   cp .env.example .env
   ```
 
-  - Edit the .env file to include your bot token and admin ID:
+  - Edit the .env file to include your bot token:
   ```bash
   BOT_TOKEN=your-bot-token-here
   ```
