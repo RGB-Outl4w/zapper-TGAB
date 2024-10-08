@@ -1,3 +1,4 @@
+![](https://i.imgur.com/zo8TWMr.png)
 # ⚡ Zapper: Telegram Anti-Spam Bot
 
 A Telegram bot built using `aiogram` that automatically filters spam messages based on language-specific phrases and tracks spam statistics per group chat.
