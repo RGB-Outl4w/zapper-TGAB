@@ -27,8 +27,8 @@ A Telegram bot built using `aiogram` that automatically filters spam messages ba
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/RGB-Outl4w/zapper-TelegramAntispamBot.git
-   cd zapper-TelegramAntispamBot
+   git clone https://github.com/RGB-Outl4w/zapper-TGAB.git
+   cd zapper-TGAB
    ```
 
 2. **Create and configure the .env file**:

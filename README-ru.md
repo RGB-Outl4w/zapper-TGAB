@@ -26,8 +26,8 @@ Telegram-бот, созданный с использованием `aiogram`, �
 
 1. **Клонируйте репозиторий**:
    ```bash
-   git clone https://github.com/RGB-Outl4w/zapper-TelegramAntispamBot.git
-   cd zapper-TelegramAntispamBot
+   git clone https://github.com/RGB-Outl4w/zapper-TGAB.git
+   cd zapper-TGAB
    ```
 
 2. **Создайте и настройте файл .env**:
