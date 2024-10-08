@@ -12,12 +12,13 @@ A Telegram bot built using `aiogram` that automatically filters spam messages ba
 
 ## Project Structure
 ```
-telegram-antispam-bot/
+~/
 ├── .env.example           # Example .env file
 ├── .gitignore             # To exclude sensitive files and Python caches
 ├── bot.py                 # Main bot script
 ├── requirements.txt       # Python dependencies
 ├── spam_phrases.txt       # Directory for spam phrase lists
+├── LICENSE                # MIT license
 ├── README.md              # Documentation
 └── README-ru.md           # Documentation on Russian
 ```
